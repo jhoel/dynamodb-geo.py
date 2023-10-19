@@ -43,6 +43,17 @@ class DynamoDBManager:
             data.extend(response['Items'])
         return data
 
+    def get_Hash(self, point):
+        """
+        Given a point it return the hash key
+        """
+        geohash = S2Manager().generateGeohash(point)
+        hashKey = S2Manager().generateHashKey(geohash, self.config.hashKeyLength)
+        return {
+            'geoHash': geohash,
+            'hashKey': hashKey
+        }
+
     def put_Point(self, putPointInput: 'PutPointInput'):
         """
         The dict in Item put_item call, should contains a dict with string as a key and a string as a value: {"N": "123"}
@@ -104,10 +115,39 @@ class DynamoDBManager:
         if('Key' not in UpdateItemInput.ExtraFields.keys()):
             params['Key']={}
 
-        params['Key'][self.config.hashKeyAttributeName] ={"N": str(hashKey)}
-        params['Key'][self.config.rangeKeyAttributeName] ={"S": UpdateItemInput.RangeKeyValue}
+        #TODO Geohash and geoJson cannot be updated. For now no control over that need to be added
+        # use update_GeoHash instead
+        try:
+            response = self.config.dynamoDBClient.update_item(**params)
+        except Exception as e:
+            print("The following error occured during the item update :{}".format(e))
+            response = "Error"
+        return response
+
+    def update_GeoHash(self, UpdateItemInput : 'UpdateItemInput'):
+        """
+        This method is used to update the geohash and geoJson attributes of an item
+        for Global Secondary Indexes
+        """
+        geohash = S2Manager().generateGeohash(UpdateItemInput.GeoPoint)
+        hashKey = S2Manager().generateHashKey(geohash, self.config.hashKeyLength)
+        response = ""
+        params = UpdateItemInput.ExtraFields.copy()
+
+        params['TableName'] = self.config.tableName
         
-        #TODO Geohash and geoJson cannot be updated. For now no control over that need to be added        
+        if('Key' not in UpdateItemInput.ExtraFields.keys()):
+            params['Key'] = {}
+
+        expresion_de_actualizacion = "SET hashKey = :hashkey, geohash = :geohash, geoJson = :geojson"
+        valores_de_expresion = {
+            ':hashkey': {'N': str(hashKey)},
+            ':geohash': {'N': str(geohash)},
+            ':geojson': {'S': "{},{}".format(UpdateItemInput.GeoPoint.latitude,UpdateItemInput.GeoPoint.longitude)}
+        }
+        params['UpdateExpression'] = expresion_de_actualizacion
+        params['ExpressionAttributeValues'] = valores_de_expresion
+
         try:
             response = self.config.dynamoDBClient.update_item(**params)
         except Exception as e:

@@ -16,6 +16,9 @@ class GeoDataManager:
         self.config = config
         self.dynamoDBManager = DynamoDBManager(config)
 
+    def get_Hash(self, point):
+        return self.dynamoDBManager.get_Hash(point)
+
     def put_Point(self, putPointInput):
         return self.dynamoDBManager.put_Point(putPointInput)
 
@@ -24,6 +27,9 @@ class GeoDataManager:
 
     def update_Point(self, UpdateItemInput: 'UpdateItemInput'):
         return self.dynamoDBManager.update_Point(UpdateItemInput)
+
+    def update_GeoHash(self, UpdateItemInput: 'UpdateItemInput'):
+        return self.dynamoDBManager.update_GeoHash(UpdateItemInput)
 
     def delete_Point(self, DeleteItemInput: 'DeleteItemInput'):
         return self.dynamoDBManager.delete_Point(DeleteItemInput)
