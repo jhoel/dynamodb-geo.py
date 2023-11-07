@@ -20,6 +20,8 @@ class DynamoDBManager:
 
         params['TableName']=self.config.tableName
         params['IndexName']=self.config.geohashIndexName
+
+        print("Querying with params: {}".format(params))
         
         # As eyConditionExpressions must only contain one condition per key, customer passing KeyConditionExpression will be replaced automatically
         params['KeyConditionExpression']=str(self.config.hashKeyAttributeName) + ' = :hashKey and ' + str(self.config.geohashAttributeName) +' between :geohashMin and :geohashMax'
